@@ -33,10 +33,16 @@ object TwitterListener {
     def onStallWarning(warning: StallWarning) = {}
   }
 
-  def listen(maybeTimeLimit: Option[Int] = None) = {
+  def listen(
+    maybeTimeLimit: Option[Int] = None,
+    maybeKeyWordFilter: Option[String] = None) = {
+
     val stream = new TwitterStreamFactory(TwitterListener.config).getInstance
     stream.addListener(TwitterListener.simpleStatusListener)
-    stream.sample
+    maybeKeyWordFilter match {
+      case Some(query) => stream.filter(new FilterQuery().track(query))
+      case None => stream.sample
+    }
     maybeTimeLimit match {
       case Some(timeLimit) => // stream for a limited time
         Thread.sleep(timeLimit)

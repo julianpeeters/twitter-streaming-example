@@ -14,6 +14,14 @@ class TwitterStreamingTest extends mutable.Specification {
       TweetStore.tweets.isEmpty ==== false
     }
 
+    "sample from a stream pre-filtered by keyword." in {
+      val timeLimit = 2000
+      val word = "money"
+      TwitterListener.listen(Some(timeLimit), Some(word))
+      // `exists` is a hack. Should be `forall` but requires searching links
+      TweetStore.tweets.values.exists(_.status.getText.contains(word)) ==== true
+    }
+
   }
 
 }
