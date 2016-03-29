@@ -2,6 +2,7 @@ package example
 package listeners
 
 import models.Tweet
+import sampler.Sampler
 import stores.TweetStore
 
 import twitter4j.{
@@ -35,7 +36,8 @@ object TwitterListener {
 
   def listen(
     maybeTimeLimit: Option[Int] = None,
-    maybeKeyWordFilter: Option[String] = None) = {
+    maybeKeyWordFilter: Option[String] = None,
+    maybeSampler: Option[Sampler] = None) = {
 
     val stream = new TwitterStreamFactory(TwitterListener.config).getInstance
     stream.addListener(TwitterListener.simpleStatusListener)
@@ -43,12 +45,20 @@ object TwitterListener {
       case Some(query) => stream.filter(new FilterQuery().track(query))
       case None => stream.sample
     }
+    def maybeStartService(maybeSampler: Option[Sampler]) = {
+      maybeSampler match {
+        case Some(sampler) => sampler.startSlidingWindow
+        case None =>
+      }
+    }
+
     maybeTimeLimit match {
       case Some(timeLimit) => // stream for a limited time
+        maybeStartService(maybeSampler)
         Thread.sleep(timeLimit)
         stream.cleanUp
         stream.shutdown
-      case None => // or stream forever
+      case None => maybeStartService(maybeSampler)
     }
   }
 
