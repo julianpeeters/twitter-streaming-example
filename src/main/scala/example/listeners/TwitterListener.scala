@@ -3,7 +3,8 @@ package listeners
 
 import models.Tweet
 import sampler.Sampler
-import stores.TweetStore
+import stats.StatTest
+import stores.Store
 
 import twitter4j.{
   FilterQuery,
@@ -22,10 +23,10 @@ object TwitterListener {
   .setOAuthAccessTokenSecret("*****")
   .build
 
-  def simpleStatusListener = new StatusListener() {
+  def simpleStatusListener(store: Store) = new StatusListener() {
     def onStatus(status: Status) = {
-      TweetStore.accept(Tweet(status))
-    //  println(status.getText)
+      store.accept(Tweet(status))
+      // println(status.getText)
     }
     def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) = {}
     def onTrackLimitationNotice(numberOfLimitedStatuses: Int) = {}
@@ -37,14 +38,17 @@ object TwitterListener {
   def listen(
     maybeTimeLimit: Option[Int] = None,
     maybeKeyWordFilter: Option[String] = None,
-    maybeSampler: Option[Sampler] = None) = {
+    maybeSampler: Option[Sampler] = None,
+    store: Store) = {
 
     val stream = new TwitterStreamFactory(TwitterListener.config).getInstance
-    stream.addListener(TwitterListener.simpleStatusListener)
+    stream.addListener(TwitterListener.simpleStatusListener(store))
+
     maybeKeyWordFilter match {
       case Some(query) => stream.filter(new FilterQuery().track(query))
       case None => stream.sample
     }
+
     def maybeStartService(maybeSampler: Option[Sampler]) = {
       maybeSampler match {
         case Some(sampler) => sampler.startSlidingWindow
